@@ -6,7 +6,7 @@
 
     <groupId>com.github.MichaelKazarian</groupId>
     <artifactId>WordDictCore</artifactId>
-    <version>1.0.0-gpl</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>WordDictCore</name>
@@ -14,10 +14,10 @@
     <url>https://github.com/MichaelKazarian/WordDictCore</url>
 
     <licenses>
-        <license>
-            <name>GNU General Public License v3.0</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
-        </license>
+      <license>
+        <name>The Apache License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      </license>
     </licenses>
 
     <developers>
