@@ -51,8 +51,8 @@ deploy:
 
 run:
 	@if [ -z "$(MAIN)" ]; then \
-	  echo "⚠️  Please specify MAIN class, e.g.:"; \
-	  echo "    make run MAIN=com.worddict.wiktionarybot.WiktionaryEnglish"; \
+	  echo "Please specify MAIN class, e.g.:"; \
+	  echo " make run MAIN=com.worddict.wiktionarybot.WiktionaryEnglish"; \
 	else \
 	  mvn exec:java -Dexec.mainClass=$(MAIN); \
 	fi
@@ -62,6 +62,6 @@ run:
 # ------------------------
 
 jar:
-	@echo "📦 Built JAR file: $(JAR_FILE)"
+	@echo "Built JAR file: $(JAR_FILE)"
 
 all: clean build test jar
