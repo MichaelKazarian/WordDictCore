@@ -35,11 +35,100 @@ This package contains the specialized tools for interacting with the Wiktionary 
 
 ## Installation (Gradle)
 
-To include `WordDictCore` in your Android or Java project, add the following dependency to your module's `build.gradle` file:
+To include `WordDictCore` in your Android or Java project, add one of the following options to your module's `build.gradle` file:
 
+### 1. Local Project Module
+If you keep `worddictcore` as a local module:
 ```gradle
 dependencies {
     implementation project(':worddictcore')
-    // OR if published to Maven:
-    // implementation 'com.github.MichaelKazarian:word-dict-core:1.0.0-gpl'
 }
+```
+
+### 2. Published via JitPack
+If you use the GitHub repository published through [JitPack](https://jitpack.io/)
+```gradle
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // For latest development version (SNAPSHOT)
+    implementation 'com.github.MichaelKazarian:WordDictCore:master-SNAPSHOT'
+
+    // For stable release versions (recommended for production)
+    // implementation 'com.github.MichaelKazarian:WordDictCore:1.0.0'
+}
+```
+
+> ** ⚠️ Note:**
+>
+> master-SNAPSHOT allows you to automatically get the latest changes from the master branch. To refresh cached dependencies, run:
+> ```sh
+> ./gradlew build --refresh-dependencies
+> ```
+> Stable release versions (tags) are recommended for production, as they provide a fixed, unchanging artifact.
+
+---
+
+## Quick Start
+
+Here is a minimal example showing how to use the library:
+
+```
+import com.worddict.worddictcore.Word;
+import com.worddict.worddictcore.Translation;
+import com.worddict.wiktionarybot.Wiktionary;
+import com.worddict.wiktionarybot.WiktionaryEnglish;
+
+public class Example {
+    public static void main(String[] args) {
+        // Create a Wiktionary instance
+        Wiktionary wiktionary = WiktionaryEnglish.newInstance();
+
+        // Search for a word
+        wiktionary.search("test");
+
+        // Get translations to German and Ukrainian
+        String[] langCodes = {"fr", "uk"};
+        Translation[] translations = wiktionary.getTranslation(langCodes);
+
+        for (Translation t : translations) {
+            System.out.println(t.getText());
+        }
+
+        // Get IPA pronunciations
+        System.out.println("IPA:");
+        for (var p : wiktionary.getIPA()) {
+            System.out.println(p.getText());
+        }
+
+        // Get audio samples
+        System.out.println("Audio Samples:");
+        for (var a : wiktionary.getAudioSamples()) {
+            System.out.println(a.getUrl());
+        }
+    }
+}
+```
+
+---
+
+### Using the Makefile
+
+The repository includes a Makefile for easier build and test management.
+
+Basic commands:
+```sh
+# Compile the project using Maven
+make build
+
+# Run unit tests
+make test
+
+# Clean the build artifacts
+make clean
+```
+
+> ** ⚠️ Note:**
+> The Makefile is just a convenient wrapper over Maven commands. You can still use `mvn clean install` directly if preferred.
