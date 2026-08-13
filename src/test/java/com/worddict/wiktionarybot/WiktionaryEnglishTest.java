@@ -100,14 +100,14 @@ public class WiktionaryEnglishTest {
 
     @Test
     public void _12getAudioSamples() {
-        AudioSample as1 = new AudioSample("En-uk-a_test");
-        as1.setUrl("https://upload.wikimedia.org/wikipedia/commons/d/d5/En-uk-a_test.ogg");
-        AudioSample as2 = new AudioSample("En-us-test");
-        as2.setUrl("https://upload.wikimedia.org/wikipedia/commons/9/9c/En-us-test.ogg");
-        as2.setComment("a=GA");
+        AudioSample as1 = new AudioSample("En-us-test");
+        as1.setUrl("https://upload.wikimedia.org/wikipedia/commons/9/9c/En-us-test.ogg");
+        as1.setComment("a=GA");
+        AudioSample as2 = new AudioSample("En-uk-a_test");
+        as2.setUrl("https://upload.wikimedia.org/wikipedia/commons/d/d5/En-uk-a_test.ogg");
         AudioSample [] expected = {as1, as2};
         AudioSample [] actual = mWiktionary.getAudioSamples();
-        AudioSample[] actualSubset = Arrays.copyOf(actual, 2);
+        AudioSample[] actualSubset = Arrays.copyOfRange(actual, 1, 3);
         assertArrayEquals(expected, actualSubset);
     }
     @Test
@@ -140,10 +140,10 @@ public class WiktionaryEnglishTest {
     public void _22getAudioSamples() {
         AudioSample as1 = new AudioSample("En-au-occur");
         as1.setUrl("https://upload.wikimedia.org/wikipedia/commons/b/be/En-au-occur.ogg");
-        as1.setComment("a=AU");
+        as1.setComment("a=Queensland");
         AudioSample as2 = new AudioSample("En-us-occur");
         as2.setUrl("https://upload.wikimedia.org/wikipedia/commons/4/44/En-us-occur.ogg");
-        as2.setComment("a=GA");
+        as2.setComment("a=California");
         AudioSample [] expected = {as1, as2};
         AudioSample [] actual = mWiktionary.getAudioSamples();
         assertArrayEquals(expected, actual);
