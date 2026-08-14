@@ -365,7 +365,7 @@ public abstract class Wiktionary {
                 break;
             System.err.printf("HTTP 429, retry after %d seconds: %s%n",
                     response.getRetryAfter(), url);
-            Thread.sleep(response.getRetryAfter() * 1000L);
+            Thread.sleep(response.getRetryAfter() * 1000L+1000L);
         }
         if (!response.isOk()) {
             throw new IOException("HTTP error: " + response.getStatusCode());
