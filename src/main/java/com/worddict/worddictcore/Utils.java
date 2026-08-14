@@ -2,6 +2,7 @@ package com.worddict.worddictcore;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -18,45 +19,12 @@ public class Utils {
     private static final String USER_AGENT = "WordDict/1.0 (OpenJDK)";
 
     /**
-     * Fetches the contents of a URL and returns it as a UTF-8 string.
+     * Fetches a URL and returns the HTTP response.
      *
      * @param urlSpec the URL to fetch (must not be null or empty)
-     * @return the response body as a UTF-8 string
+     * @return the {@link HttpResponse}, including status code, Retry-After and response body
      * @throws IOException if the URL is invalid or an I/O error occurs
      */
-    public static String getUrlString(String urlSpec) throws IOException {
-        URL url;
-        try {
-            url = new URL(urlSpec);
-        } catch (MalformedURLException e) {
-            throw new IOException("Invalid URL format: " + urlSpec, e);
-        }
-
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        try {
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            int responseCode = connection.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw new IOException("HTTP error: " + responseCode);
-            }
-
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append('\n');
-                }
-                return sb.toString();
-            }
-        } finally {
-            connection.disconnect();
-        }
-    }
-
     public static HttpResponse getUrl(String urlSpec) throws IOException {
         URL url;
         try {
@@ -78,20 +46,24 @@ public class Utils {
             String retryAfterHeader = connection.getHeaderField("Retry-After");
 
             if (retryAfterHeader != null) {
-                try {
-                    retryAfter = Integer.parseInt(retryAfterHeader);
-                } catch (NumberFormatException ignored) {
-                }
+                try { retryAfter = Integer.parseInt(retryAfterHeader);}
+                catch (NumberFormatException ignored) {}
             }
+            InputStream inputStream = responseCode >= 400
+                    ? connection.getErrorStream()
+                    : connection.getInputStream();
 
             StringBuilder sb = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(
-                            connection.getInputStream(),
-                            StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append('\n');
+            if (inputStream != null) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                inputStream,
+                                StandardCharsets.UTF_8))) {
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
                 }
             }
             return new HttpResponse(responseCode, retryAfter, sb.toString());
