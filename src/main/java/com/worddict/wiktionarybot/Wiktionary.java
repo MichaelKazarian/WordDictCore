@@ -1,6 +1,7 @@
 package com.worddict.wiktionarybot;
 
 import com.worddict.worddictcore.AudioSample;
+import com.worddict.worddictcore.HttpResponse;
 import com.worddict.worddictcore.Language;
 import com.worddict.worddictcore.Pronounce;
 import com.worddict.worddictcore.Translation;
@@ -21,6 +22,8 @@ import java.util.Set;
 import java.net.URLEncoder;
 
 public abstract class Wiktionary {
+    final int MAX_HTTP_RETRIES = 2;
+
     protected String mAPIUrl;  //FROM Wiktionary.java
     protected HashMap<String, String> mCachedPages;
 
@@ -108,24 +111,29 @@ public abstract class Wiktionary {
     public abstract String getLanguageSectionRegexp();
 
     public String [] getWordProposals(String word) {
+        String url = getSearchUrl(word);
         try {
             //String candidate = Tools.toTitle(word); //better search
-            String url = getSearchUrl(word);
-            String json = Utils.getUrlString(url);
-            JSONArray jsonBody = new JSONArray(json);
+            HttpResponse response = getUrlWithRetry(url);
+            JSONArray jsonBody = new JSONArray(response.getBody());
             JSONArray variants = jsonBody.getJSONArray(1);
             String[] result = new String[variants.length()];
             for (int i = 0; i < variants.length(); i++) {
                 result[i] = variants.getString(i);
             }
             return result;
-        } catch (IOException ioe) {
-            //Log.e("ASD", "Failed to fetch URL: ", ioe);
-        } catch (JSONException je) {
-            //Log.e("ASD", "Failed to parse JSON", je);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Interrupted while waiting for retry");
+        } catch (IOException | JSONException e) {
+            System.err.printf(
+                    "Failed to fetch URL: %s%n", url);
+            e.printStackTrace(System.err);
         }
         return new String[0];
     }
+
     //========================================================================
     /**
      * FROM Wiktionary.java
@@ -327,17 +335,39 @@ public abstract class Wiktionary {
      * @return Wikitext content of the article, or empty string if not found or error occurs.
      */
     protected String loadWordArticle(String word) {
+        String url = getWikiTextUrl(word);
         try {
-            String url = getWikiTextUrl(word);
-            String json = Utils.getUrlString(url);
-            JSONObject root = new JSONObject(json);
-            return root
+            HttpResponse response = getUrlWithRetry(url);
+            return new JSONObject(response.getBody())
                     .getJSONObject("parse")
                     .getJSONObject("wikitext")
                     .getString("*");
-        } catch (IOException | JSONException e) {
-            //Log.e(Wiktionary.class.getSimpleName(), "Error loading article for word: " + word, e);
-            return "";
         }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Interrupted while waiting for retry");
+        } catch (IOException | JSONException e) {
+            System.err.printf("Error loading article for word: %s%n", word);
+            e.printStackTrace(System.err);
+        }
+        return "";
+    }
+    
+    private HttpResponse getUrlWithRetry(String url)
+        throws IOException, InterruptedException {
+
+        HttpResponse response = null;
+        for (int retry = 0; retry <= MAX_HTTP_RETRIES; retry++) {
+            response = Utils.getUrl(url);
+            if (!response.isTooManyRequests())
+                break;
+            System.err.printf("HTTP 429, retry after %d seconds: %s%n",
+                    response.getRetryAfter(), url);
+            Thread.sleep(response.getRetryAfter() * 1000L);
+        }
+        if (!response.isOk()) {
+            throw new IOException("HTTP error: " + response.getStatusCode());
+        }
+        return response;
     }
 }

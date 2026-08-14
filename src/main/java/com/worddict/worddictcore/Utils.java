@@ -15,6 +15,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utils {
+    private static final String USER_AGENT = "WordDict/1.0 (OpenJDK)";
+
     /**
      * Fetches the contents of a URL and returns it as a UTF-8 string.
      *
@@ -32,9 +34,7 @@ public class Utils {
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try {
-            connection.setRequestProperty(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0");
+            connection.setRequestProperty("User-Agent", USER_AGENT);
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
@@ -52,6 +52,49 @@ public class Utils {
                 }
                 return sb.toString();
             }
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    public static HttpResponse getUrl(String urlSpec) throws IOException {
+        URL url;
+        try {
+            url = new URL(urlSpec);
+        } catch (MalformedURLException e) {
+            throw new IOException("Invalid URL format: " + urlSpec, e);
+        }
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        try {
+            connection.setRequestProperty("User-Agent", USER_AGENT);
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+
+            int retryAfter = -1;
+            String retryAfterHeader = connection.getHeaderField("Retry-After");
+
+            if (retryAfterHeader != null) {
+                try {
+                    retryAfter = Integer.parseInt(retryAfterHeader);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(
+                            connection.getInputStream(),
+                            StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append('\n');
+                }
+            }
+            return new HttpResponse(responseCode, retryAfter, sb.toString());
         } finally {
             connection.disconnect();
         }
