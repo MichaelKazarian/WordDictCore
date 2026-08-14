@@ -157,27 +157,29 @@ public abstract class Wiktionary {
         return result;
     }
 
-    public String [] lookup(String word){
-        String [] result = {};
+    public String[] lookup(String word) {
+        String url = getSearchUrl(word, 6);
         try {
-            String url = getSearchUrl(word, 6);
-            String json = Utils.getUrlString(url);
-            JSONArray jsonBody = new JSONArray(json);
+            HttpResponse response = getUrlWithRetry(url);
+            JSONArray jsonBody = new JSONArray(response.getBody());
             JSONArray variants = jsonBody.getJSONArray(1);
-            if (variants.length() == 0) return result;
-            ArrayList<String> r = new ArrayList<>(); String s;
-            for (int i=0; i<variants.length(); i++) {
-                s = variants.getString(i);
-                r.add(s.replace(" ", "_"));
+            if (variants.length() == 0) return new String[0];
+
+            ArrayList<String> result = new ArrayList<>();
+            for (int i = 0; i < variants.length(); i++) {
+                result.add(variants.getString(i).replace(" ", "_"));
             }
-            result = r.toArray(new String[r.size()]);
-            return result;
-        } catch (IOException ioe){
-            //Log.e("ASD", "Failed to fetch URL: ", ioe);
-        } catch (JSONException je) {
-            //Log.e("ASD", "Failed to parse JSON", je);
+            return result.toArray(new String[0]);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("Interrupted while waiting for retry");
+        } catch (IOException | JSONException e) {
+            System.err.printf(
+                    "Failed to fetch URL: %s%n", url);
+            e.printStackTrace(System.err);
         }
-        return result;
+        return new String[0];
     }
 
     protected String getSearchUrl(String word) {
