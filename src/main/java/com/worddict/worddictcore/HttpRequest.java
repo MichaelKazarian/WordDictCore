@@ -154,6 +154,14 @@ public class HttpRequest {
         }
     }
 
+    /**
+    * Returns the remaining rate-limit delay in seconds.
+    *
+    * <p>The value is rounded up to ensure that the next request is not
+    * attempted before the block has expired.</p>
+    *
+    * @return remaining delay in seconds
+    */
     private static int getRetryAfter() {
         return (int) ((blockedUntil - System.currentTimeMillis() + 999L) / 1000L);
     }
