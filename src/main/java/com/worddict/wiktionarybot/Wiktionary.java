@@ -1,5 +1,6 @@
 package com.worddict.wiktionarybot;
 
+import com.worddict.worddictcore.HttpRequest;
 import com.worddict.worddictcore.AudioSample;
 import com.worddict.worddictcore.HttpResponse;
 import com.worddict.worddictcore.Language;

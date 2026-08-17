@@ -1,15 +1,22 @@
-package com.worddict.wiktionarybot;
+package com.worddict.worddictcore;
 
-import com.worddict.worddictcore.HttpResponse;
-import com.worddict.worddictcore.Utils;
 import java.io.IOException;
 
-public class HttpRequest {
-    private static final long EXTRA_DELAY_MS = 1000L;
 
+public class HttpRequest {
+    interface RequestExecutor {
+        HttpResponse get(String url) throws IOException;
+    }
+    
+    private static final long EXTRA_DELAY_MS = 1000L;
     private static long blockedUntil;
 
     public static HttpResponse get(String url) throws IOException {
+        return get(url, Utils::getUrl);
+    }
+    
+    public static HttpResponse get(String url, RequestExecutor executor)
+            throws IOException {
         synchronized (HttpRequest.class) {
             if (isBlocked()) {
                 return new HttpResponse(
@@ -18,9 +25,7 @@ public class HttpRequest {
                         "");
             }
         }
-
-        HttpResponse response = Utils.getUrl(url);
-
+        HttpResponse response = executor.get(url);
         if (response.isTooManyRequests()) {
             synchronized (HttpRequest.class) {
                 blockedUntil = Math.max(
@@ -30,7 +35,6 @@ public class HttpRequest {
                                 + EXTRA_DELAY_MS);
             }
         }
-
         return response;
     }
 
@@ -40,5 +44,9 @@ public class HttpRequest {
 
     public static synchronized boolean isBlocked() {
         return System.currentTimeMillis() < blockedUntil;
+    }
+    
+    static synchronized void reset() {
+        blockedUntil = 0;
     }
 }
