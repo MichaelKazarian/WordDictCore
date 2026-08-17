@@ -122,4 +122,28 @@ public class HttpRequestTest {
         assertTrue(response.isOk());
         assertEquals(2, calls.get());
     }
+    
+    @Test
+    public void testGetUrl_wiktionary() throws IOException {
+        String url = "https://en.wiktionary.org/wiki/test";
+
+        HttpResponse response = HttpRequest.getUrl(url);
+        assertTrue(response.isOk());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isEmpty());
+        assertTrue("Expected Wiktionary HTML content",
+                response.getBody().contains("<title>test - Wiktionary"));
+    }
+
+    @Test(expected = IOException.class)
+    public void testGetUrl_invalidUrl() throws IOException {
+        HttpRequest.getUrl("invalid_url");
+    }
+
+    @Test
+    public void testGetUrl_nonexistentPage() throws IOException {
+        String url = "https://en.wiktionary.org/wiki/this_page_should_not_exist";
+        HttpResponse response = HttpRequest.getUrl(url);
+        assertFalse(response.isOk());
+    }
 }
