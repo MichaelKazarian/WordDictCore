@@ -23,6 +23,7 @@ import java.net.URLEncoder;
 
 public abstract class Wiktionary {
     final int MAX_HTTP_RETRIES = 2;
+    private static final long HTTP_RETRY_WAIT_TIMEOUT_MS = 60_000L;
 
     protected String mAPIUrl;  //FROM Wiktionary.java
     protected HashMap<String, String> mCachedPages;
@@ -356,19 +357,27 @@ public abstract class Wiktionary {
     }
     
     private HttpResponse getUrlWithRetry(String url)
-        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
 
+        final long retryTimeout = System.currentTimeMillis() + HTTP_RETRY_WAIT_TIMEOUT_MS;
         HttpResponse response = null;
         for (int retry = 0; retry <= MAX_HTTP_RETRIES; retry++) {
-            response = Utils.getUrl(url);
+            while (HttpRequest.isBlocked()) {
+                if (System.currentTimeMillis() >= retryTimeout) {
+                    throw new IOException("HTTP retry wait timeout");
+                }
+                Thread.sleep(100);
+            }
+            response = HttpRequest.get(url);
             if (!response.isTooManyRequests())
                 break;
-            System.err.printf("HTTP 429, retry after %d seconds: %s%n",
+            System.err.printf(
+                    "HTTP 429, retry after %d seconds: %s%n",
                     response.getRetryAfter(), url);
-            Thread.sleep(response.getRetryAfter() * 1000L+1000L);
         }
         if (!response.isOk()) {
-            throw new IOException("HTTP error: " + response.getStatusCode());
+            throw new IOException(
+                    "HTTP error: " + response.getStatusCode());
         }
         return response;
     }

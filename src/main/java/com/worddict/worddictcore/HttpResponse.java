@@ -3,7 +3,7 @@ package com.worddict.worddictcore;
 import java.net.HttpURLConnection;
 
 public class HttpResponse {
-    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    public static final int HTTP_TOO_MANY_REQUESTS = 429;
     private final int statusCode;
     private final int retryAfter;
     private final String body;
