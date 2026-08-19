@@ -363,7 +363,7 @@ public abstract class Wiktionary {
         final long retryTimeout = System.currentTimeMillis() + HTTP_RETRY_WAIT_TIMEOUT_MS;
         HttpResponse response = null;
         for (int retry = 0; retry <= MAX_HTTP_RETRIES; retry++) {
-            while (HttpRequest.isBlocked()) {
+            while (HttpRequest.isBlocked(url)) {
                 if (System.currentTimeMillis() >= retryTimeout) {
                     throw new IOException("HTTP retry wait timeout");
                 }

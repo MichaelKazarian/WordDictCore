@@ -8,6 +8,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -33,7 +35,7 @@ import java.nio.charset.StandardCharsets;
 public class HttpRequest {
     private static final String USER_AGENT = "WordDict/1.0 (OpenJDK)";
     private static final long EXTRA_DELAY_MS = 1000L;
-    private static long blockedUntil;
+    private static final Map<String, Long> blockedUntil = new HashMap<>();
 
     interface RequestExecutor {
         HttpResponse get(String url) throws IOException;
@@ -71,22 +73,29 @@ public class HttpRequest {
      */
     public static HttpResponse get(String url, RequestExecutor executor)
             throws IOException {
+        String host = getHost(url);
         synchronized (HttpRequest.class) {
-            if (isBlocked()) {
+            if (isBlockedHost(host)) {
                 return new HttpResponse(
                         HttpResponse.HTTP_TOO_MANY_REQUESTS,
-                        getRetryAfter(),
+                        getRetryAfter(host),
                         "");
             }
         }
         HttpResponse response = executor.get(url);
-        if (response.isTooManyRequests()) {
-            synchronized (HttpRequest.class) {
-                blockedUntil = Math.max(
-                        blockedUntil,
+        synchronized (HttpRequest.class) {
+            if (response.isTooManyRequests()) {
+                blockedUntil.put(
+                        host,
                         System.currentTimeMillis()
                                 + response.getRetryAfter() * 1000L
                                 + EXTRA_DELAY_MS);
+            } else if (response.isOk()) {
+                Long until = blockedUntil.get(host);
+                if (until != null
+                        && System.currentTimeMillis() >= until) {
+                    blockedUntil.remove(host);
+                }
             }
         }
         return response;
@@ -162,8 +171,12 @@ public class HttpRequest {
     *
     * @return remaining delay in seconds
     */
-    private static int getRetryAfter() {
-        return (int) ((blockedUntil - System.currentTimeMillis() + 999L) / 1000L);
+    private static synchronized int getRetryAfter(String host) {
+        Long until = blockedUntil.get(host);
+        if (until == null)
+            return 0;
+
+        return (int) ((until - System.currentTimeMillis() + 999L) / 1000L);
     }
 
     /**
@@ -172,8 +185,51 @@ public class HttpRequest {
      *
      * @return {@code true} while the rate-limit block is active
      */
-    public static synchronized boolean isBlocked() {
-        return System.currentTimeMillis() < blockedUntil;
+    public static boolean isBlocked(String url) throws IOException {
+        String host = getHost(url);
+
+        synchronized (HttpRequest.class) {
+            Long until = blockedUntil.get(host);
+
+            if (until == null)
+                return false;
+
+            if (System.currentTimeMillis() >= until) {
+                blockedUntil.remove(host);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    private static boolean isBlockedHost(String host) {
+        Long until = blockedUntil.get(host);
+
+        if (until == null)
+            return false;
+
+        if (System.currentTimeMillis() >= until) {
+            blockedUntil.remove(host);
+            return false;
+        }
+
+        return true;
+    }
+    
+    private static String getHost(String urlSpec) throws IOException {
+        try {
+            URL url = new URL(urlSpec);
+            int port = url.getPort();
+
+            if (port == -1)
+                port = url.getDefaultPort();
+
+            return url.getHost() + ":" + port;
+
+        } catch (MalformedURLException e) {
+            throw new IOException("Invalid URL format: " + urlSpec, e);
+        }
     }
 
     /**
@@ -182,6 +238,6 @@ public class HttpRequest {
      * <p>Package-private because this method is intended for tests.</p>
      */
     static synchronized void reset() {
-        blockedUntil = 0;
+        blockedUntil.clear();
     }
 }

@@ -67,7 +67,7 @@ public class HttpRequestTest {
      */
     @Test
     public void testGetReturnsTooManyRequestsResponse() throws IOException {
-        HttpResponse response = HttpRequest.get("test", executor);
+        HttpResponse response = HttpRequest.get("https://test.example", executor);
         assertTrue(response.isTooManyRequests());
         assertEquals(1, calls.get());
     }
@@ -87,10 +87,10 @@ public class HttpRequestTest {
      */
     @Test
     public void testGetRejectsRequestWhileBlocked() throws IOException {
-        HttpResponse response = HttpRequest.get("test", executor);
+        HttpResponse response = HttpRequest.get("https://test.example", executor);
         assertTrue(response.isTooManyRequests());
 
-        response = HttpRequest.get("test", executor);
+        response = HttpRequest.get("https://test.example", executor);
 
         assertTrue(response.isTooManyRequests());
         assertEquals(1, calls.get());
@@ -112,12 +112,12 @@ public class HttpRequestTest {
     public void testGetAllowsRequestAfterBlockExpires()
             throws IOException, InterruptedException {
 
-        HttpResponse response = HttpRequest.get("test", executor);
+        HttpResponse response = HttpRequest.get("https://test.example", executor);
         assertTrue(response.isTooManyRequests());
 
         Thread.sleep(2100);
 
-        response = HttpRequest.get("test", executor);
+        response = HttpRequest.get("https://test.example", executor);
 
         assertTrue(response.isOk());
         assertEquals(2, calls.get());
