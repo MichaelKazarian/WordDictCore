@@ -1,5 +1,7 @@
-package com.worddict.worddictcore;
+package com.worddict.net;
 
+import com.worddict.net.HttpResponse;
+import com.worddict.net.HttpRequest;
 import org.junit.Before;
 import org.junit.Test;
 

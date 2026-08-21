@@ -1,4 +1,4 @@
-package com.worddict.worddictcore;
+package com.worddict.net;
 
 import java.net.HttpURLConnection;
 
